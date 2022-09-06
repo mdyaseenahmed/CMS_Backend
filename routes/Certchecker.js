@@ -16,11 +16,16 @@ router.get('/certexpiry',requireAuth,async (req,res)=>{
         certif=data.cert
     }catch(err){
         console.log(err)   
-        res.send("Failed")
+        res.send("Certificate Does Not Exist")
     }
-    data=await validateSSL(certif)
+    try{
+
+        data=await validateSSL(certif)
+    }catch(err){
+        return res.json({error:"Certificate has Expired"})
+    }
     
-    res.send(data)
+    return res.send(data)
 
     
     
