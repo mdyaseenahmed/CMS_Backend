@@ -21,11 +21,11 @@ router.post('/signin', async (req, res) => {
     }catch(err){
         const error = new Error('User Does Not Exist');
         error.code = 400;
-        return res.status(error.code).json(error.message);
+        return res.status(error.code).json({error:error.message});
     }
 
     if (!foundUser) {
-        return res.status(400).json('Incorrect Email or Password');
+        return res.status(400).json({error:'Incorrect Email or Password'});
     }
 
     let isValidPassword;
@@ -39,13 +39,13 @@ router.post('/signin', async (req, res) => {
         console.log(err);
         const error = new Error('Incorrect Email or Password');
         error.code = 422;
-        return res.status(400).json(error.message);
+        return res.status(400).json({error:error.message});
     }
 
     if (!isValidPassword) {
         const error = new Error('Incorrect Email or Password');
         error.code = 422;
-        return res.status(400).json(error.message);
+        return res.status(400).json({error:error.message});
     }
    
     let token;
@@ -60,7 +60,7 @@ router.post('/signin', async (req, res) => {
     } catch (err) {
         const error = new Error("User couldn't be logged in");
         error.code = 422;
-        return res.status(400).json(error.message);
+        return res.status(400).json({error:error.message});
     }
 
     return res.status(200).json({

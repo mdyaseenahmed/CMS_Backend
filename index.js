@@ -1,5 +1,6 @@
 require('./models/User')
 require('./models/Cert')
+require('./models/Pk')
 require('dotenv').config()
 const express = require('express')
 const requireAuth = require('./middlewares/checkAuth')
@@ -13,6 +14,7 @@ const certexpiry=require('./routes/Certchecker')
 const pushCert=require('./routes/Pushcert')
 const certvalid=require('./routes/Certvalid')
 const signin = require('./routes/Signin')
+var cors = require('cors')
 app.use(bodyParser.json())
 app.use(signup)
 app.use(domainexpiry)
@@ -20,7 +22,7 @@ app.use(certexpiry)
 app.use(pushCert)
 app.use(certvalid)
 app.use(signin)
-
+app.use(cors())
 
 mongoose.connect(mongoUri)
 

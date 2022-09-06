@@ -27,7 +27,7 @@ router.post('/signup',[
     if(errs.errors.length!==0){
         const err=new Error(errs.errors[0].msg)
         err.code = 422
-        return res.status(err.code).json(err.message)
+        return res.status(err.code).json({error:err.message})
     }
     let emailExist
 
@@ -38,14 +38,14 @@ router.post('/signup',[
     }catch(err){
         const error = new Error("Hmmmm wonder what went wrong");
         error.code = 422;
-        return res.status(error.code).json(error.message);
+        return res.status(error.code).json({error:error.message});
         
     }
 
     if(emailExist.length !== 0){
         const error = new Error("Email already exists")
         error.code = 422
-        return res.status(error.code).json(error.message)
+        return res.status(error.code).json({error:error.message})
     }
 
     let hashPass
@@ -58,7 +58,7 @@ router.post('/signup',[
         console.log(err)
         const error = new Error('Hashing error');
         error.code = 422;
-        return res.status(error.code).json(error.message);
+        return res.status(error.code).json({error:error.message});
 
     }
 
@@ -86,7 +86,7 @@ router.post('/signup',[
     }catch(err){
         const error=new Error("Error with JWT")
         error.code=422
-        return res.status(error.code).json(error.message)
+        return res.status(error.code).json({error:error.message})
     }
 
     try{
@@ -96,7 +96,7 @@ router.post('/signup',[
         console.log(err)
         const error = new Error("Sign up Failed")
         error.code=500
-        return res.status(error.code).json(error.message)
+        return res.status(error.code).json({error:error.message})
     }
 
     return res.json({
