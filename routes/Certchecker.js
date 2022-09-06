@@ -16,7 +16,7 @@ router.get('/certexpiry',requireAuth,async (req,res)=>{
         certif=data.cert
     }catch(err){
         console.log(err)   
-        res.send("Certificate Does Not Exist")
+        res.json({error:"Certificate Does Not Exist"})
     }
     try{
 
