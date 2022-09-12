@@ -1,82 +1,71 @@
-const express=require("express")
-const { default: mongoose } = require("mongoose")
-const router =express.Router()
-const requireAuth = require('../middlewares/checkAuth')
-const Cert = mongoose.model('Cert')
-const { validateCertKeyPair,validateSSL } = require('ssl-validator');
+const express = require("express");
+const { default: mongoose } = require("mongoose");
+const router = express.Router();
+const requireAuth = require("../middlewares/checkAuth");
+const Cert = mongoose.model("Cert");
+const { validateCertKeyPair, validateSSL } = require("ssl-validator");
 
-let certif=`-----BEGIN CERTIFICATE-----
-MIIDMzCCAhsCFFKRLpkccpt3vuc2u5zGzuvCdxazMA0GCSqGSIb3DQEBCwUAMFYx
-CzAJBgNVBAYTAklOMRMwEQYDVQQIDApTb21lLVN0YXRlMRMwEQYDVQQKDAp0ZWxz
-X3RyYWluMR0wGwYJKoZIhvcNAQkBFg5zb21lQGdtYWlsLmNvbTAeFw0yMjA4MjYw
-NTQ3NTZaFw0yMjA5MDUwNTQ3NTZaMFYxCzAJBgNVBAYTAklOMRMwEQYDVQQIDApT
-b21lLVN0YXRlMRMwEQYDVQQKDAp0ZWxzX3RyYWluMR0wGwYJKoZIhvcNAQkBFg5z
-b21lQGdtYWlsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALtt
-fK6HWTYyvcGD2ETiO3oRv1dhxNeEkzIjc00sP+Qi5vBqJYWd/06Jlc4z/X7Y8271
-mTjgDlDv1b6dOUMtDJDw680xlOtopZ8FJt3odDdDvC9zErGmDBkYRu4lir+1PZnX
-g3g+jX0j47eAofJDm35hERlQ++6z9Cax5T9kNLkdH73UB3RvtUqYB009IzEHEB8X
-vvMYkNgQJbUyfffsEs9bGetph5zLw9gcG3WdeMALv18T2Tz1Nxwxm42UwjgX/dBR
-aNjp+6E1AlNyZb0V6mFG+V4F7wpdO9ZWo8MAHsNDrZy4ttzPHgRuJAxdZrZ9ZrWK
-aNZu1OKz3YY62lcwJwkCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEATs0cFsQWLj2j
-dqxuj1gIiJMC5nSrLCFXFbfkA/GMt7EYkq5Av8TIYkwEprtHdYy36/ohT4GFVsAT
-kFhfn1OS3EXNYLvgHPcoKoFAyhfa+H8+f9LPWR90Ne+GFYocrdK5KJvT/OP5rV6W
-0uV3wcKtbnlDdM5NAdj2+Oo7Cfx3NCjzSPhGeP0nwpdzQ7KHUqPxt+VmD+J54MT9
-39R6upGk3VScyzj3vIOgJJhR5u+S8xH1LIKjXlahvQ4hUCm0DELYOt+39Xj2gx25
-XDnp0M92E9J9mYAPo3glrmOPo2Qr7i/K5JAyt25UqwigZUtyo3PUShXOAxVjiLjc
-funIt6tTIw==
------END CERTIFICATE-----
-`
+let certif = `-----BEGIN CERTIFICATE-----
+MIIDCzCCAfMCFGD73smNzse9SnZd73Y5uN8Ho9rVMA0GCSqGSIb3DQEBCwUAMEIx
+CzAJBgNVBAYTAklOMRIwEAYDVQQIDAlLYXJuYXRha2ExEjAQBgNVBAcMCUJhbmdh
+bG9yZTELMAkGA1UECwwCSVQwHhcNMjIwODI2MTEwNDEzWhcNMjMwODI2MTEwNDEz
+WjBCMQswCQYDVQQGEwJJTjESMBAGA1UECAwJS2FybmF0YWthMRIwEAYDVQQHDAlC
+YW5nYWxvcmUxCzAJBgNVBAsMAklUMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAq25hpKTi8fmOdU32tx5DNgdcV4ftiGr7Wuk934hlEM8mulmcq8xwPg4j
+U0RzO7NUF99VqEYKtNRUNRPq5vGxCYGaJ5abeGc3AM7RkYjxIAc0BFRyPrpI7EsZ
+iaZb1+7di/MUBOjOas7NRE+YK7H/nOCLT+c7E1BG48bKj48im2R3Z6fKMIx/XbdQ
+nmXm1JFsIJvavA389987joWvxs/rJkkrUEgBDxt7Y55LrlBjYqSF7zdaS+aWL5Iv
+Ak3onJogAqzSmqmbmsP5n0AR9CtbuIsqfKqqsUz7fjSCHTMrjcllhMh4Q6sMVU1T
+zZdyUCEW0P3Pjz2AGoRlYuPwOE9YDwIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBr
+1Z/d8uos8Hkq+MKpXuuNZS4ODVjdI1IFaKMNNa/++rGN3Bfwf11GjhRYnl+RQ2Rz
+K7fS4PhruVaeBh7xdGetgnkm7XMRt8huoouScx19qeUjIM6bz9A0Cqm73sWGJf5V
+e4MejIMvtCbUdPNHsA2Im0JTp1SW49I/+zIBNBaKTOk7nhMOQ7JowC0xXJB1eVQO
+SxMKKsHU/5KLk1MZ+slpIQrUJtK8IssfsWMGU/eIKgrfVhtI58ry1Kr2zR+Bnk/M
+1h64WEaBzhp42Tee0EguckxnIhPIFuScEeMOgg3oZ9n+9GpIZOeUBDkUD3PlcxJJ
+gLMvQM5/Oag7c1oOsJXz
+-----END CERTIFICATE-----`;
 
-let pk=`-----BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAu218rodZNjK9wYPYROI7ehG/V2HE14STMiNzTSw/5CLm8Gol
-hZ3/TomVzjP9ftjzbvWZOOAOUO/Vvp05Qy0MkPDrzTGU62ilnwUm3eh0N0O8L3MS
-saYMGRhG7iWKv7U9mdeDeD6NfSPjt4Ch8kObfmERGVD77rP0JrHlP2Q0uR0fvdQH
-dG+1SpgHTT0jMQcQHxe+8xiQ2BAltTJ99+wSz1sZ62mHnMvD2BwbdZ14wAu/XxPZ
-PPU3HDGbjZTCOBf90FFo2On7oTUCU3JlvRXqYUb5XgXvCl071lajwwAew0OtnLi2
-3M8eBG4kDF1mtn1mtYpo1m7U4rPdhjraVzAnCQIDAQABAoIBAQCo2NmZ4RTdXpjT
-3JLYe3ZZYeOeNNW/0g9I++bDfzmPrGGf9AAZf1ygxBHQ0cVsoMWtEFQYiMBc6bMF
-JV6QxeSsLl4/XItsB7osp9d70g3gO4Usud39bDk54kUEBY4ZZo04Ko6lpLSSJ+Ld
-TWSXe5B5KbjdtbdAM52fvmNn2D4nBCqGlu/aCnLfkq4XVZYcvaDx6hk2KqUUZ4Wg
-fE8nLkyx8yIqJkQMI3xWQO0jsZa9wUks6jIo4Tr1I14ot/do0MfcKB92D1aET3Gq
-rXc4DmK0i/x1ncbuDSstMo0AxNr0RbfNmtFiPukpMR+yYkYaCqOzHr3ZL+7Aox6E
-J/iDV2IBAoGBAOZ1O9ZXWaPUjBZXE0bUBX13p4iW1UnRk+/D5eDH2PoETiL0SQis
-CvTiCpcFLXyWlowvZZuwaEvRNYEaG6NdxH7Cl1/VNkb692IBXwHkEBeKLfc94kDz
-Owduxg5tEiASO3WpaLxZSK7lvbUbHpXPCdbXzPV8yEaVjOBOJgjLcJ8FAoGBANAz
-W+AlkyrywwlWuE1eK1kBBm8cANXOg1Ah2sS3pc/OzDfp6KfK+sVGjqh+vAvGSKFL
-fG6Vw0s2mGUMSI5oPECO+b307hD5VAJOVUoniGnKi9KGs/+gRghOLsmP2eTpx4HS
-fGJQZKrjMFNQsvw2DU9+i20ApmH3mkv/26qlWT81AoGAUr/NmI0M1tK+6lahyVDg
-F8kbEuR1+WeTYwhIRon70uow1EQ65S5BUOTJQKjPSGkZ7YQnS9vv1ylruMuTGPnW
-UF221OZN8vayVTKA1sD5Njqbfqdt0jyD+YtA+nUXiQSC7SDDRr4YZxR/JcRzGv+Y
-XNhn8822bAHO78ufxJCoA7ECgYEAnkreCH4o9RdbR+dh+pilNmc8IA/XZrc7SRpk
-PPovm95rj/tMQv5lSMXLQroQeJdJszA0K9O7hpy8ot8C7xq67I6HvG/S7J7Ty2kJ
-GXcTFPPE+MwnYCvX8wqWMfMnxA4l/EMvBISA9RgELuQFIRJrbkwU70v2NDfPXQbr
-WUObph0CgYEAkf1mfTKjkLFiienBYHhqsVLs/+uicZ9mHW0R7v59/MJ3VIkGV07u
-3/S1mghffJ1zyR5yCV3mZu+Z+wGecugpuZ/EPVC/nNzECXRugRcoR5LyrfIuJwV2
-ose5g56EhnzgF2unP0iEGV7I5KH26nGLwLUropp3oRx4d4vbfUPGtTE=
------END RSA PRIVATE KEY-----
-`
+let pk = `-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCrbmGkpOLx+Y51
+Tfa3HkM2B1xXh+2Iavta6T3fiGUQzya6WZyrzHA+DiNTRHM7s1QX31WoRgq01FQ1
+E+rm8bEJgZonlpt4ZzcAztGRiPEgBzQEVHI+ukjsSxmJplvX7t2L8xQE6M5qzs1E
+T5grsf+c4ItP5zsTUEbjxsqPjyKbZHdnp8owjH9dt1CeZebUkWwgm9q8Dfz33zuO
+ha/Gz+smSStQSAEPG3tjnkuuUGNipIXvN1pL5pYvki8CTeicmiACrNKaqZuaw/mf
+QBH0K1u4iyp8qqqxTPt+NIIdMyuNyWWEyHhDqwxVTVPNl3JQIRbQ/c+PPYAahGVi
+4/A4T1gPAgMBAAECggEAA94RINxBbHETWC0imD38CS+AU08zOiUjt4jUhwL2OLtb
+pc+Yu714eMXr4RiFuv6QMpusvIeb/TlfDvV8kqo4Mr00Q5lft4colAGWc8CRpAXV
+lBVtoGGmfIIzOMpCfywZ3mrk9DlmUr2InvZmufGhkSH1sp9GU2i3uLLG5hc2EihY
+HuoMo7BSzvKLGb0ouf0j/o1PVVe0JBwX/iQQ27Av5dKgHpM2yb0qBIjc0syM46xR
+wDwmLmASPdYKxnn8Y2iCv29xrPmnHcqCm+MZha1NaCEEwJVdrSgAEr1W1CqQpQ7d
+QxCoJXdXi2mGNtu+Wj/6h3p6LBzwVrPFBWyJtJ8oIQKBgQDWFdJMYpNq+fZ39wdC
+pAn6wKfgOj+VpbEtFaXHqbcPqqGSllTLtrtPMNi1/GX6pUCT5i7cpeJh2Ru9lNxS
+Tm1bso4bGYq2E1hwcwgvGrxIw8b5o8AWzzMkLCbTH6nblvJ8DRGdpNng/tg1XZ5U
+eSna6QW4Vx7X2SkWj9QOh26kYQKBgQDM/rF3ndgYaWgDSTfy3CRnpSjlLvLEgdd2
+7Thivs9XSE/oKrLSI6kGEj2Z6L0vTWnupkTvJKF9VfsONdFclCTyueFnLW7gFaO9
+ZQ+7PK2nGLUlv4eUDXGsmQ865LU8+6+jcPm9QBtcjfCNRdGaKVO7yKDMOvUcJ12b
+UpNdjQ9SbwKBgGfSx11CBSpBNTVyuLOp6CkSW5fTx9hkNauervpIpT3Uy2zSuSbe
+ZLKABukjEbXfhJT1cc6SKFq5tslXMw47eK+axW4BEhNBCIfoUZS+i4diYtHYhyTI
+sY2eV+nVlkOnTcu5bsycEQobrXEcCNgAtrqyfZKrtYqKh3GoqPeu2IqhAoGAUfYH
+SLcgfmoufxnYN87S82mylyeVQwJS/qbMI5b82X39DOt9gc1mOBo07QOEGJSQJS3v
+Y9o2gyFMdpsH8Ub+Gto9B/6/VPLx+7ibeJZDLAsR6lzQvV4+s+6iiz6ERDSxPdze
+zU8DYZcStblTm5qocu09dUqhU7ddksuKRh4vIRsCgYBBNplxLY/8lydgXg7E/CVQ
+HsA1bf7f/ohTvCYOz0qwkmlGIVkOkPuSJ9eYvlWSW1bQ+2ERffigLT0jz9y1aUkD
+h9eFEe1biSmbBwqoVe3D876PBR63Wv23Kv28BdbxfgQEjGWEy1ifdmOFFkrc8MeC
+mnnXObc9mouiojhkj2zm1Q==
+-----END PRIVATE KEY-----`;
 
-
-
-router.get('/certvalid',requireAuth,async (req,res)=>{
+router.get("/certvalid", requireAuth, async (req, res) => {
     let data;
-    try{
-        data=await validateCertKeyPair(certif,pk)
-    }catch(err){
-        const error = new Error("Validation Failed")
-        error.code=422
-        return res.status(error.code).json(error.message)
-
+    try {
+        data = await validateCertKeyPair(certif, pk);
+    } catch (err) {
+        console.log(err);
+        const error = new Error("Validation Failed");
+        error.code = 422;
+        return res.status(error.code).json(error.message);
     }
-    
-    return res.send(data)
 
-    
-    
-    
-    
-    
-    
-})
+    return res.send(data);
+});
 
-module.exports=router
+module.exports = router;

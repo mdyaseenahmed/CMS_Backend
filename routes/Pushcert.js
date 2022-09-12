@@ -1,11 +1,11 @@
-const express = require('express')
-const mongoose = require('mongoose')
-const Cert = mongoose.model('Cert')
-const Pk = mongoose.model('Pk')
-const {ObjectId} = require('mongodb');
+const express = require("express");
+const mongoose = require("mongoose");
+const Cert = mongoose.model("Cert");
+// const Pk = mongoose.model('Pk')
+const { ObjectId } = require("mongodb");
 
-const router = express.Router()
-let certif=`-----BEGIN CERTIFICATE-----
+const router = express.Router();
+let certif = `-----BEGIN CERTIFICATE-----
 MIIDCzCCAfMCFGD73smNzse9SnZd73Y5uN8Ho9rVMA0GCSqGSIb3DQEBCwUAMEIx
 CzAJBgNVBAYTAklOMRIwEAYDVQQIDAlLYXJuYXRha2ExEjAQBgNVBAcMCUJhbmdh
 bG9yZTELMAkGA1UECwwCSVQwHhcNMjIwODI2MTEwNDEzWhcNMjMwODI2MTEwNDEz
@@ -24,7 +24,7 @@ SxMKKsHU/5KLk1MZ+slpIQrUJtK8IssfsWMGU/eIKgrfVhtI58ry1Kr2zR+Bnk/M
 1h64WEaBzhp42Tee0EguckxnIhPIFuScEeMOgg3oZ9n+9GpIZOeUBDkUD3PlcxJJ
 gLMvQM5/Oag7c1oOsJXz
 -----END CERTIFICATE-----
-`
+`;
 let pk = `-----BEGIN PRIVATE KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCrbmGkpOLx+Y51
 Tfa3HkM2B1xXh+2Iavta6T3fiGUQzya6WZyrzHA+DiNTRHM7s1QX31WoRgq01FQ1
@@ -53,49 +53,40 @@ HsA1bf7f/ohTvCYOz0qwkmlGIVkOkPuSJ9eYvlWSW1bQ+2ERffigLT0jz9y1aUkD
 h9eFEe1biSmbBwqoVe3D876PBR63Wv23Kv28BdbxfgQEjGWEy1ifdmOFFkrc8MeC
 mnnXObc9mouiojhkj2zm1Q==
 -----END PRIVATE KEY-----
-`
+`;
 
-router.post('/addcert',async(req,res)=>{
+router.post("/addcert", async (req, res) => {
     let id = ObjectId();
-    const newCert=new Cert({
-        _id:id,
-        cert:certif,
-        domain:req.body.domain,
-        email:req.body.email
-
-    })
+    const newCert = new Cert({
+        _id: id,
+        cert: certif,
+        domain: req.body.domain,
+        email: req.body.email,
+    });
 
     const newPk = new Pk({
-        certId:id,
-        pk:pk
-    })
+        certId: id,
+        pk: pk,
+    });
 
-    try{
-        
-        await newCert.save()
-        
-    }catch(err){
-        console.log(err)
-        const error = new Error("Certificate Add Failed")
-        error.code=500
-        return res.status(error.code).json({error:error.message})
+    try {
+        await newCert.save();
+    } catch (err) {
+        console.log(err);
+        const error = new Error("Certificate Add Failed");
+        error.code = 500;
+        return res.status(error.code).json({ error: error.message });
     }
-    try{
-        
-        await newPk.save()
-        
-    }catch(err){
-        console.log(err)
-        const error = new Error("Private Key Add Failed")
-        error.code=500
-        return res.status(error.code).json({error:error.message})
+    try {
+        await newPk.save();
+    } catch (err) {
+        console.log(err);
+        const error = new Error("Private Key Add Failed");
+        error.code = 500;
+        return res.status(error.code).json({ error: error.message });
     }
 
+    return res.json({ Success: "Save Success!", Id: id });
+});
 
-    return res.json({Success:"Save Success!",Id:id})
-
-    
-})
-
-module.exports = router
-
+module.exports = router;
