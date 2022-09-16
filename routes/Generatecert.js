@@ -98,6 +98,12 @@ router.post('/createselfsigned',requireAuth,[
         }catch(err){
             console.log("Write Failed")
         }
+
+        try{
+            success = fs.writeFileSync(id+"/"+id2+".csr", keys.csr)
+        }catch(err){
+            console.log("Write Failed")
+        }
         
         try{
              ciphertext = CryptoJS.AES.encrypt(keys.certificate, process.env.SECRET_KEY).toString();
@@ -142,6 +148,20 @@ router.post('/createselfsigned',requireAuth,[
             return res.status(error.code).json({ error: error.message });
         }
 
+        pem.getPublicKey(keys.certificate,function(err,keys){
+            if(err){
+                return res.json({error:"Couldn't create certificate."})
+
+            }
+
+            try{
+                success = fs.writeFileSync(id+"/"+id2+"public.key", keys.publicKey)
+            }catch(err){
+                console.log("Write Failed")
+            }
+
+        })
+
         let mailOptions = {
             from: 'team5cmstelstra@gmail.com', // TODO: email sender
             to: req.user.email, // TODO: email receiver
@@ -149,7 +169,10 @@ router.post('/createselfsigned',requireAuth,[
             text: 'Please find your new certificated attached, Thank you, for using our service.',
             attachments: [
                 
-                { filename: id2+".crt", path: id+"/"+id2+".crt" } 
+                { filename: id2+".crt", path: id+"/"+id2+".crt" },
+                { filename: id2+".csr", path: id+"/"+id2+".csr" },
+                { filename: id2+".key", path: id+"/"+id2+".key" },
+                { filename: id2+"public.key", path: id+"/"+id2+"public.key" }
             ]
         };
         
@@ -168,7 +191,7 @@ router.post('/createselfsigned',requireAuth,[
             return res.json({error:"Couldn't create certificate."})
         }
 
-        return res.json({success:"Generated Certificate Successfully!",cert:keys.certificate,pk:keys.serviceKey,certid:id2})
+        return res.json({success:"Generated Certificate Successfully!",cert:keys.certificate,pk:keys.serviceKey,csr:keys.csr,certid:id2})
 
         
 
