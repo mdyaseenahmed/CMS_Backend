@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 
 const pkSchema = new mongoose.Schema({
     certId:{type:String,required:true,unique:true},
-    pk:{type:String,required:true}
+    pk:{type:String,required:true},
+    type:{type:String,required:true}
     
 
 })
