@@ -18,7 +18,7 @@ const nodemailer = require('nodemailer');
 router.post('/createrootsigned',requireAuth,[
 
     check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL().withMessage("Not a valid domain"),
-    check('basicConstraints').not().isEmpty().withMessage('Basic Constraints Required.').contains("CA:false").withMessage("Invalid Parameters"),
+    //check('basicConstraints').not().isEmpty().withMessage('Basic Constraints Required.').contains("CA:false").withMessage("Invalid Parameters"),
 ],async(req,res)=>{
 
     const errs = validationResult(req)
@@ -28,14 +28,17 @@ router.post('/createrootsigned',requireAuth,[
         err.code = 422
         return res.status(err.code).json({error:err.message})
     }
-
+    
     let key 
     let cert
     let ciphertext
     let pk
     let datac
     let bytes
+    let altN = []
     const {
+        keyBitSize,
+        csrSignAlgo,
         days,
         countryName,
         stateOrProvinceName,
@@ -46,8 +49,10 @@ router.post('/createrootsigned',requireAuth,[
         emailAddress,
         basicConstraints,
         keyUsage,
-        basicConstraintsCA
+        basicConstraintsCA,
+        altNames
     } = req.body;
+    
 
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -58,29 +63,47 @@ router.post('/createrootsigned',requireAuth,[
             pass: process.env.PASSWORD  // TODO: your gmail password
         }
     });
+    let extData = ""
+    if (typeof altNames !== 'undefined' && altNames.length > 0) {
+        altN = altNames
+    }
+    
 
-    var confData = `[req]\ndays = ${days}\ndistinguished_name = req_distinguished_name\nreq_extensions = v3_req\nx509_extensions = v3_ca\nprompt = no\n\n[req_distinguished_name]\ncountryName = ${countryName}\nstateOrProvinceName = ${stateOrProvinceName}\nlocalityName = ${localityName}\norganizationName = ${organizationName}\norganizationalUnitName = ${organizationalUnitName}\ncommonName = ${commonName}\nemailAddress = ${emailAddress}\n\n[v3_req]\nbasicConstraints = ${basicConstraints}\nkeyUsage = ${keyUsage}\n\n[v3_ca]\nbasicConstraints = ${basicConstraintsCA}`; 
+    if(basicConstraints!=""){
+        extData+=`basicConstraints = ${basicConstraints}\n`
+        
+
+    }
+    if(keyUsage!=""){
+        extData+=`keyUsage = ${keyUsage}\n`
+    }
+    if(basicConstraintsCA!=""){
+        extData+=`basicConstraints = ${basicConstraintsCA}\n`
+    }
+    extData+=`subjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid,issuer:always\n`
+
+
+    
     let id = ObjectId()
     let id2 = id
     id = "./"+id
     let success
 
-    fs.mkdir(id, (err) => {
-        if (err) {
-            return res.json({error:"Couldn't create certificate."})
-        }
-        console.log(id)
-        console.log("Directory is created.");
-    })
-        
-
     try{
-        success = fs.writeFileSync(id+"/myConf.conf", confData)
+        success=fs.mkdirSync(id)
     }catch(err){
-        
-        return res.json({error:"Couldn't create certificate."})
+        return res.json({error:"Couldn't create certificate. 12900"})
+
     }
 
+    try{
+        success = fs.writeFileSync(id+"/myext.conf", extData)
+    }catch(err){
+        console.log("Write Failed")
+    }
+        
+
+    
     try{
         id_m = process.env.RCA
         datac=await Cert.findOne({_id:id_m})
@@ -111,11 +134,11 @@ router.post('/createrootsigned',requireAuth,[
     try{
         bytes  = CryptoJS.AES.decrypt(pk, process.env.SECRET_KEY);
         pk = bytes.toString(CryptoJS.enc.Utf8);
-        console.log(pk)
+        
         
 
     }catch(err){
-        return res.json({error:"Couldn't create certificate."})
+        return res.json({error:"Couldn't create certificate. 188"})
     }
 
     console.log(id)
@@ -127,11 +150,11 @@ router.post('/createrootsigned',requireAuth,[
 
 
 
-    pem.createCertificate({ csrConfigFile:'myConf.conf',days:days,serviceKey:pk,serviceCertificate:cert,extFile:'./host-ext.conf'}, async function (err, keys) {
+    pem.createCertificate({ country:countryName,state:stateOrProvinceName,locality:localityName,organization:organizationName,organizationUnit:organizationalUnitName,commonName:commonName,emailAddress:emailAddress,altNames:altN,keyBitsize:keyBitSize,hash:csrSignAlgo,days:days,serviceCertificate:cert,serviceKey:pk,extFile:id+'/myext.conf'}, async function (err, keys) {
         if (err) {
             console.log(err)
             
-          return res.json({error:"Couldn't create certificate."})
+          return res.json({error:"Couldn't create certificate 12."})
         }
 
         
@@ -156,9 +179,10 @@ router.post('/createrootsigned',requireAuth,[
         try{
              ciphertext = CryptoJS.AES.encrypt(keys.certificate, process.env.SECRET_KEY).toString();
              cipherkey = CryptoJS.AES.encrypt(keys.clientKey,process.env.SECRET_KEY).toString()
-             cipherconf = CryptoJS.AES.encrypt(confData,process.env.SECRET_KEY).toString()
+             cipherconf = CryptoJS.AES.encrypt(extData,process.env.SECRET_KEY).toString()
         }catch(err){
-            return res.json({error:"Couldn't create certificate."})
+            console.log(err)
+            return res.json({error:"Couldn't create certificate. 116"})
         }
         
         const newCert = new Cert({
@@ -198,7 +222,7 @@ router.post('/createrootsigned',requireAuth,[
 
         pem.getPublicKey(keys.certificate,function(err,keys){
             if(err){
-                return res.json({error:"Couldn't create certificate."})
+                return res.json({error:"Couldn't create certificate. 123"})
 
             }
 
@@ -228,7 +252,7 @@ router.post('/createrootsigned',requireAuth,[
             success = await transporter.sendMail(mailOptions)
             
         }catch(err){
-            return res.json({error:"Couldn't create certificate."})
+            return res.json({error:"Couldn't create certificate. 115"})
         }
         
 
@@ -236,7 +260,7 @@ router.post('/createrootsigned',requireAuth,[
             success = fs.rmSync(id, { recursive: true, force: true });
             
         }catch(err){
-            return res.json({error:"Couldn't create certificate."})
+            return res.json({error:"Couldn't create certificate 114."})
         }
 
         return res.json({success:"Generated Certificate Successfully!",cert:keys.certificate,pk:keys.clientKey,certid:id2,csr:keys.csr})

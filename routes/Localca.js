@@ -28,6 +28,8 @@ router.post('/createlca',requireAuth,[
     let ciphertext
     let pk
     const {
+        keyBitSize,
+        csrSignAlgo,
         days,
         countryName,
         stateOrProvinceName,
@@ -65,7 +67,7 @@ router.post('/createlca',requireAuth,[
 
 
 
-    pem.createCertificate({ csrConfigFile:id+'/myConf.conf',days:days }, async function (err, keys) {
+    pem.createCertificate({ keyBitsize:keyBitSize,hash:csrSignAlgo,csrConfigFile:id+'/myConf.conf',days:days }, async function (err, keys) {
         if (err) {
           return res.json({error:"Couldn't create certificate."})
         }

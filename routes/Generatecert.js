@@ -17,8 +17,8 @@ const nodemailer = require('nodemailer');
 
 router.post('/createselfsigned',requireAuth,[
 
-    check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL().withMessage("Not a valid domain"),
-    check('basicConstraints').not().isEmpty().withMessage('Common Name Required.').contains("CA:false").withMessage("Invalid Parameters"),
+    //check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL().withMessage("Not a valid domain"),
+    //check('basicConstraints').not().isEmpty().withMessage('Common Name Required.').contains("CA:false").withMessage("Invalid Parameters"),
 ],async(req,res)=>{
 
     const errs = validationResult(req)
@@ -33,8 +33,11 @@ router.post('/createselfsigned',requireAuth,[
     let cert
     let ciphertext
     let pk
+    let altN = []
     const {
+        keyBitSize,
         days,
+        csrSignAlgo,
         countryName,
         stateOrProvinceName,
         localityName,
@@ -44,7 +47,8 @@ router.post('/createselfsigned',requireAuth,[
         emailAddress,
         basicConstraints,
         keyUsage,
-        basicConstraintsCA
+        basicConstraintsCA,
+        altNames
     } = req.body;
 
     let transporter = nodemailer.createTransport({
@@ -57,32 +61,52 @@ router.post('/createselfsigned',requireAuth,[
         }
     });
 
-    var confData = `[req]\ndays = ${days}\ndistinguished_name = req_distinguished_name\nreq_extensions = v3_req\nx509_extensions = v3_ca\nprompt = no\n\n[req_distinguished_name]\ncountryName = ${countryName}\nstateOrProvinceName = ${stateOrProvinceName}\nlocalityName = ${localityName}\norganizationName = ${organizationName}\norganizationalUnitName = ${organizationalUnitName}\ncommonName = ${commonName}\nemailAddress = ${emailAddress}\n\n[v3_req]\nbasicConstraints = ${basicConstraints}\nkeyUsage = ${keyUsage}\n\n[v3_ca]\nbasicConstraints = ${basicConstraintsCA}`; 
+    
     let id = ObjectId()
     let id2 = id
     id = "./"+id
     let success
 
-    fs.mkdir(id, (err) => {
-        if (err) {
-            return res.json({error:"Couldn't create certificate."})
-        }
-        console.log("Directory is created.");
-    })
+    try{
+        success=fs.mkdirSync(id)
+    }catch(err){
+        return res.json({error:"Couldn't create certificate. 12900"})
+
+    }
         
 
+    let extData = ""
+    if (typeof altNames !== 'undefined' && altNames.length > 0) {
+        altN = altNames
+    }
+    
+
+    if(basicConstraints!=""){
+        extData+=`basicConstraints = ${basicConstraints}\n`
+        
+
+    }
+    if(keyUsage!=""){
+        extData+=`keyUsage = ${keyUsage}\n`
+    }
+    if(basicConstraintsCA!=""){
+        extData+=`basicConstraints = ${basicConstraintsCA}\n`
+    }
+    extData+=`subjectKeyIdentifier = hash\nauthorityKeyIdentifier = keyid,issuer:always\n`
+
     try{
-        success = fs.writeFileSync(id+"/myConf.conf", confData)
+        success = fs.writeFileSync(id+"/myext.conf", extData)
     }catch(err){
-        return res.json({error:"Couldn't create certificate."})
+        console.log("Write Failed")
     }
 
     
 
 
 
-    pem.createCertificate({ csrConfigFile:id+'/myConf.conf',days:days,selfSigned:true,extFile:'./host-ext.conf' }, async function (err, keys) {
+    pem.createCertificate({ country:countryName,state:stateOrProvinceName,locality:localityName,altNames:altN,organization:organizationName,organizationUnit:organizationalUnitName,commonName:commonName,emailAddress:emailAddress,keyBitsize:keyBitSize,hash:csrSignAlgo,days:days,selfSigned:true,extFile:id+'/myext.conf' }, async function (err, keys) {
         if (err) {
+            console.log(err)
           return res.json({error:"Couldn't create certificate."})
         }
 
@@ -108,7 +132,7 @@ router.post('/createselfsigned',requireAuth,[
         try{
              ciphertext = CryptoJS.AES.encrypt(keys.certificate, process.env.SECRET_KEY).toString();
              cipherkey = CryptoJS.AES.encrypt(keys.serviceKey,process.env.SECRET_KEY).toString()
-             cipherconf = CryptoJS.AES.encrypt(confData,process.env.SECRET_KEY).toString()
+             cipherconf = CryptoJS.AES.encrypt(extData,process.env.SECRET_KEY).toString()
         }catch(err){
             return res.json({error:"Couldn't create certificate."})
         }

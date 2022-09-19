@@ -14,6 +14,7 @@ router.post('/generatelocalcacert',requireAuth,async(req,res)=>{
     let pk
     let cert
     const {
+        
         days,
         countryName,
         stateOrProvinceName,
@@ -32,12 +33,12 @@ router.post('/generatelocalcacert',requireAuth,async(req,res)=>{
     id = "./"+id
     let success
 
-    fs.mkdir(id, (err) => {
-        if (err) {
-            throw err;
-        }
-        console.log("Directory is created.");
-    })
+    try{
+        success=fs.mkdirSync(id)
+    }catch(err){
+        return res.json({error:"Couldn't create certificate. 12900"})
+
+    }
         
 
     try{

@@ -18,12 +18,14 @@ const user_certs = require('./routes/Getusercerts')
 const generatecert = require('./routes/Generatecert')
 const localca = require('./routes/Localca')
 const scert = require('./routes/Genscert')
+const detcert = require('./routes/GetDetailedCertInfo')
 
 
 const certft = require('./routes/TestBuffer')
 
 const port = process.env.PORT || 3000
 var cors = require('cors')
+app.use(cors())
 app.use(bodyParser.json())
 app.use(signup)
 app.use(domainexpiry)
@@ -35,11 +37,10 @@ app.use(user_certs)
 app.use(generatecert)
 app.use(localca)
 app.use(scert)
-
-
+app.use(detcert)
 app.use(certft)
 
-app.use(cors())
+
 
 
 mongoose.connect(mongoUri)

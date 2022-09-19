@@ -29,6 +29,7 @@
     "openssl-nodejs": "^1.0.5",
     "pem": "git+https://github.com/Dexus/pem.git",
     "ssl-checker": "^2.0.7",
-    "ssl-validator": "^1.0.7"
+    "ssl-validator": "^1.0.7",
+    "unix-timestamp": "^1.0.2"
   }
 }
