@@ -10,10 +10,10 @@ const jwt = require('jsonwebtoken');
 const router = express.Router()
 const {check, validationResult} = require('express-validator');
 router.post('/signup',[
-    check('firstName').not().isEmpty().withMessage('First name required.'),
-    check('lastName').not().isEmpty().withMessage('Last name required.'),
-    check('department').not().isEmpty().withMessage('Department is required.'),
-    check('userType').not().isEmpty().withMessage('User Type is required').matches(/\b(admin|regular)\b/).withMessage("Invalid User Type"),
+    check('firstName').ltrim().not().isEmpty().withMessage('First name required.'),
+    check('lastName').ltrim().not().isEmpty().withMessage('Last name required.'),
+    check('department').ltrim().not().isEmpty().withMessage('Department is required.'),
+    check('userType').ltrim().not().isEmpty().withMessage('User Type is required').matches(/\b(admin|regular)\b/).withMessage("Invalid User Type"),
     check('email').not().isEmpty().withMessage("Email is required").isEmail().withMessage("Enter a valid email"),
     check('password').not().isEmpty().isLength({min:7}).withMessage('Password must have a number and be of minimum length 7').matches(/\d/).withMessage("Password must have a number and be of minimum length 7")
 
