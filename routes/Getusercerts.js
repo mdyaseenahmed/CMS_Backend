@@ -7,6 +7,9 @@ const Pk = mongoose.model('Pk')
 const CryptoJS = require("crypto-js");
 const { validateCertKeyPair,validateSSL } = require('ssl-validator');
 const timestamp = require('unix-timestamp');
+let currentDate = Date.now()
+var pem = require('pem')
+let endDate
 function timeConverter(UNIX_timestamp){
     var a = new Date(UNIX_timestamp * 1000);
     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -38,15 +41,15 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
     }
 
     
-
+    console.log(data3.length)
     for(let i=0;i<data3.length;i++){
 
         id=data3[i]._id
         certif=data3[i].cert
     
         try{
-            bytes  = CryptoJS.AES.decrypt(certif, process.env.SECRET_KEY);
-            certif = bytes.toString(CryptoJS.enc.Utf8);
+            bytes  = CryptoJS.AES.decrypt(data3[i].cert, process.env.SECRET_KEY);
+            data3[i].cert = bytes.toString(CryptoJS.enc.Utf8);
             
 
         }catch(err){
@@ -54,36 +57,56 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
         }
 
         
-
+/*
 
         try{
             data=await validateSSL(certif)
         }catch(err){
-            console.log(err)
+            console.log("Certificate expired")
         }
-        
+        */
         
         //data.certInfo.validity.end=timeConverter(data.certInfo.validity.end)
-        data.certInfo.validity.start=timeConverter(data.certInfo.validity.start/1000)
-        data.certInfo.validity.end=timeConverter(data.certInfo.validity.end/1000)
+    pem.readCertificateInfo(data3[i].cert, function (err, data) {
+        if (err) {
+            throw err
+        }
+        endDate = data.validity.end
+        if(currentDate>endDate){
+            data.validity.start="expired"
+            data.validity.end="expired"
+        }
+        else{
+            
+            data.validity.start=timeConverter(data.validity.start/1000)
+            data.validity.end=timeConverter(data.validity.end/1000)
+        }
         let certinfo={
-            id:id,
-            country:data.certInfo.country,
-            state:data.certInfo.state,
-            locality:data.certInfo.locality,
-            organization:data.certInfo.organization,
-            organizationUnit:data.certInfo.organizationUnit,
-            commonName:data.certInfo.commonName,
-            start:data.certInfo.validity.start,
-            end:data.certInfo.validity.end
+            id:data3[i]._id,
+            country:data.country,
+            state:data.state,
+            locality:data.locality,
+            organization:data.organization,
+            organizationUnit:data.organizationUnit,
+            commonName:data.commonName,
+            start:data.validity.start,
+            end:data.validity.end
         }
         
+        
         dataArr.push(certinfo)
+        if(i==data3.length-1){
+            return res.send(dataArr)
+        }
+        
+        
+    })
         
     }
     
         
-    return res.send(dataArr)
+    
+
 })
 
 module.exports = router

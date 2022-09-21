@@ -17,7 +17,9 @@ const nodemailer = require('nodemailer');
 
 router.post('/createrootsigned',requireAuth,[
 
-    check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL().withMessage("Not a valid domain"),
+    check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL({require_protocol:false}).withMessage("Invalid URL"),
+    check('countryName').optional({checkFalsy:true}).isISO31661Alpha2().withMessage("Invalid country code. ISO 3166-1 alpha-2 standard followed."),
+    check('days').isNumeric({no_symbols:true}).withMessage("Days needs to be a number without any symbols.")
     //check('basicConstraints').not().isEmpty().withMessage('Basic Constraints Required.').contains("CA:false").withMessage("Invalid Parameters"),
 ],async(req,res)=>{
 
@@ -26,10 +28,12 @@ router.post('/createrootsigned',requireAuth,[
     if(errs.errors.length!==0){
         const err=new Error(errs.errors[0].msg)
         err.code = 422
+        console.log(errs)
         return res.status(err.code).json({error:err.message})
     }
     
     let key 
+    let pub
     let cert
     let ciphertext
     let pk
@@ -141,7 +145,8 @@ router.post('/createrootsigned',requireAuth,[
         return res.json({error:"Couldn't create certificate. 188"})
     }
 
-    console.log(id)
+    //console.log(cert)
+    //console.log(pk)
 
 
 
@@ -242,9 +247,7 @@ router.post('/createrootsigned',requireAuth,[
             attachments: [
                 
                 { filename: id2+".crt", path: id+"/"+id2+".crt" },
-                { filename: id2+".csr", path: id+"/"+id2+".csr" },
-                { filename: id2+".key", path: id+"/"+id2+".key" },
-                { filename: id2+"public.key", path: id+"/"+id2+"public.key" }
+                
             ]
         };
         
@@ -253,6 +256,14 @@ router.post('/createrootsigned',requireAuth,[
             
         }catch(err){
             return res.json({error:"Couldn't create certificate. 115"})
+        }
+
+        try{
+            pub = fs.readFileSync(id+"/"+id2+"public.key",{encoding:"utf-8"})
+
+        }catch(err){
+            console.log(err)
+            return res.json({error:"Couldn't create certificate."})
         }
         
 
@@ -263,7 +274,7 @@ router.post('/createrootsigned',requireAuth,[
             return res.json({error:"Couldn't create certificate 114."})
         }
 
-        return res.json({success:"Generated Certificate Successfully!",cert:keys.certificate,pk:keys.clientKey,certid:id2,csr:keys.csr})
+        return res.json({success:"Generated Certificate Successfully!",cert:keys.certificate,pk:keys.clientKey,certid:id2,pub:pub,csr:keys.csr})
 
         
 
