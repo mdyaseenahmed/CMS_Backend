@@ -7,6 +7,7 @@ const Pk = mongoose.model('Pk')
 const CryptoJS = require("crypto-js");
 var pem = require('pem')
 const fs = require('fs')
+const {ObjectId} = require('mongodb');
 const { validateCertKeyPair,validateSSL } = require('ssl-validator');
 const timestamp = require('unix-timestamp');
 function timeConverter(UNIX_timestamp){
@@ -22,14 +23,15 @@ function timeConverter(UNIX_timestamp){
     return time;
   }
 
-  id="./hey"
-  id2="hey_pub"
+
 
   
 
 
 router.post('/getcertinfo',requireAuth,async(req,res)=>{
-    
+    let id = ObjectId()
+    let id2 = id
+    id = "./"+id
    /* try{
         success = fs.rmSync(id, { recursive: true, force: true });
         

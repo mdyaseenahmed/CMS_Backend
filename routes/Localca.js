@@ -15,10 +15,10 @@ const nodemailer = require('nodemailer');
 
 
 
-router.post('/createselfsigned',requireAuth,[
+router.post('/createlca',requireAuth,[
 
     check('commonName').not().isEmpty().withMessage('Common Name Required.').isURL({require_protocol:false}).withMessage("Invalid URL"),
-    check('basicConstraints').not().isEmpty().withMessage('Basic constraints Required.').contains("CA:true").withMessage("Invalid Parameters"),
+    check('basicConstraints').not().isEmpty().withMessage('Basic constraints Required.').contains("CA:true").withMessage("Invalid basic constraints"),
     check('countryName').optional({checkFalsy:true}).isISO31661Alpha2().withMessage("Invalid country code. ISO 3166-1 alpha-2 standard followed."),
     check('days').isNumeric({no_symbols:true}).withMessage("Days needs to be a number without any symbols.")
     
