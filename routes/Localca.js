@@ -197,7 +197,7 @@ router.post('/createlca',requireAuth,[
             text: 'Please find your new certificated attached, Thank you, for using our service.',
             attachments: [
                 
-                { filename: id2+".crt", path: id+"/"+id2+".crt" },
+                { filename: "localca_"+id2+".crt", path: id+"/"+id2+".crt" },
                 
             ]
         };

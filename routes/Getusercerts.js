@@ -22,9 +22,11 @@ function timeConverter(UNIX_timestamp){
     var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
     return time;
   }
+  
 
 
 router.get('/user_certs',requireAuth,async(req,res)=>{
+    
     let id
     let data
     let certif
@@ -33,6 +35,7 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
     let dataArr=[]
     try{
         data3 = await Cert.find({email:req.user.email})
+       
         
         
 
@@ -40,9 +43,15 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
         return res.json({error:"Couldn't find any certificates"})
     }
 
+    if(data3.length==0){
+        return res.json({error:"Couldn't find any certificates"})
+
+    }
+
     
     console.log(data3.length)
     for(let i=0;i<data3.length;i++){
+       
 
         id=data3[i]._id
         certif=data3[i].cert
@@ -57,19 +66,9 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
         }
 
         
-/*
-
-        try{
-            data=await validateSSL(certif)
-        }catch(err){
-            console.log("Certificate expired")
-        }
-        */
-        
-        //data.certInfo.validity.end=timeConverter(data.certInfo.validity.end)
     pem.readCertificateInfo(data3[i].cert, function (err, data) {
         if (err) {
-            throw err
+            return res.json({error:"Couldn't get certificate details."})
         }
         endDate = data.validity.end
         if(currentDate>endDate){
@@ -83,6 +82,7 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
         }
         let certinfo={
             id:data3[i]._id,
+            type:data3[i].type,
             country:data.country,
             state:data.state,
             locality:data.locality,
@@ -95,14 +95,20 @@ router.get('/user_certs',requireAuth,async(req,res)=>{
         
         
         dataArr.push(certinfo)
-        if(i==data3.length-1){
-            return res.send(dataArr)
+        
+        if(dataArr.length==data3.length){
+            res.send(dataArr)
+        
+           
         }
         
         
     })
+    
         
     }
+    
+    
     
         
     

@@ -196,7 +196,7 @@ router.post('/createselfsigned',requireAuth,[
             text: 'Please find your new certificated attached, Thank you, for using our service.',
             attachments: [
                 
-                { filename: id2+".crt", path: id+"/"+id2+".crt" },
+                { filename: "selfsigned_"+id2+".crt", path: id+"/"+id2+".crt" },
                 
             ]
         };

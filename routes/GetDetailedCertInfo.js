@@ -52,11 +52,16 @@ router.post('/getcertinfo',requireAuth,async(req,res)=>{
     let certif
     let bytes
     let pk
+    let idc
+    let type
 
     let dataArr=[]
     try{
         data = await Cert.findOne({_id:req.body.id})
         certif=data.cert
+        idc=data._id
+        type=data.type
+
         
         
 
@@ -130,7 +135,7 @@ router.post('/getcertinfo',requireAuth,async(req,res)=>{
 
             data.validity.start=timeConverter(data.validity.start/1000)
             data.validity.end=timeConverter(data.validity.end/1000)
-            let dataf = {cert_info:data,pub:pub,cert:certif}
+            let dataf = {cert_info:data,pub:pub,cert:certif,type:type,id:idc}
             return res.json(dataf)
     
         })

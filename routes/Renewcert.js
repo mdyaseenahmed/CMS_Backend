@@ -11,6 +11,7 @@ let currentDate = Date.now()
 const {ObjectId} = require('mongodb');
 var pem = require('pem')
 const fs = require('fs')
+
 const nodemailer = require('nodemailer');
 
 router.patch('/renewcert',requireAuth,async(req,res)=>{
@@ -30,6 +31,9 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
     let dns
     let algo
     let pub
+    let certname
+    let newExpiry =  Math.floor(+new Date() / 1000) + req.body.days * 24 * 60 * 60
+    
 
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -40,16 +44,17 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
             pass: process.env.PASSWORD  // TODO: your gmail password
         }
     });
-
-    if(!Number.isInteger(days) && days>0){
-        return res.json({error:"Couldn't create certificate."})
-    }
+/*
+    if(!(Number.isInteger(days)) || days<=0){
+        return res.json({error:"Days to extend must be a number more than 0"})
+    }*/
 
     
     try{
         data3 = await Cert.findOne({_id:req.body.id})
         ext = data3.conf
         cert = data3.cert
+
 
         
         
@@ -78,6 +83,11 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
     }
     
     if(data3.type==="CA" || data3.type==="SS"){
+        if(data3.type==="CA"){
+            certname="localca_"
+        }else if(data3.type==="SS"){
+            certname="selfsigned_"
+        }
         
         
 
@@ -99,11 +109,17 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
                 return res.json({error:"Couldn't create certificate"})
             }
 
+            if(newExpiry<(data.validity.end/1000)){
+                return res.json({error:"Can't pick a new expiry date i.e. less than the current one."})
+            }
+
             if(data.hasOwnProperty('san')){
                 dns = data.san.dns
             }else{
                 dns=[]
             }
+            
+            
 
             keybitsize = parseInt(data.publicKeySize.split(/[ ,]+/)[0])
             algo = data.signatureAlgorithm.slice(0,6)
@@ -114,6 +130,8 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
                     console.log(err)
                   return res.json({error:"Couldn't create certificate."})
                 }
+
+                
         
                 
                 try{
@@ -198,7 +216,7 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
                     text: 'Please find your new certificated attached, Thank you, for using our service.',
                     attachments: [
                         
-                        { filename: id2+".crt", path: id+"/"+id2+".crt" },
+                        { filename: certname+id2+".crt", path: id+"/"+id2+".crt" },
                         
                     ]
                 };
@@ -266,7 +284,7 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
 
 
     }else if(data3.type==="CAS"){
-        
+        certname="signed_"
 
         try{
             id_m = process.env.RCA
@@ -326,6 +344,10 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
             if (err) {
                 console.log(err)
                 return res.json({error:"Couldn't create certificate"})
+            }
+
+            if(newExpiry<(data.validity.end/1000)){
+                return res.json({error:"Can't pick a new expiry date i.e. less than the current one."})
             }
 
             keybitsize = parseInt(data.publicKeySize.split(/[ ,]+/)[0])
@@ -431,7 +453,7 @@ router.patch('/renewcert',requireAuth,async(req,res)=>{
                     text: 'Please find your new certificated attached, Thank you, for using our service.',
                     attachments: [
                         
-                        { filename: id2+".crt", path: id+"/"+id2+".crt" },
+                        { filename: certname+id2+".crt", path: id+"/"+id2+".crt" },
                         
                     ]
                 };
